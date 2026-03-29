@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
 }
 
 @theme inline {
@@ -10,17 +10,119 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-serif: var(--font-instrument-serif);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.text-gradient-heading {
+  background: linear-gradient(to bottom, #ffffff 30%, rgba(255, 255, 255, 0.5));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(to bottom, rgb(146, 129, 247), rgb(154, 84, 220));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shimmer-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.15),
+        rgba(255, 255, 255, 0.03)
+      )
+      border-box;
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+.shimmer-border-purple {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(
+        to bottom,
+        rgba(146, 129, 247, 0.5),
+        rgba(146, 129, 247, 0.05)
+      )
+      border-box;
+  background-origin: padding-box, border-box;
+  background-clip: padding-box, border-box;
+}
+
+.glass-button {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.03)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.glass-button:hover {
+  background: white;
+  color: black;
+}
+
+.glass-button-purple {
+  background: linear-gradient(
+    to bottom,
+    rgba(146, 129, 247, 0.2),
+    rgba(146, 129, 247, 0.08)
+  );
+  border: 1px solid rgba(146, 129, 247, 0.3);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+.glass-button-purple:hover {
+  background: #9281f7;
+  color: white;
+}
+
+.code-shimmer-tr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(
+    to left,
+    transparent,
+    rgba(146, 129, 247, 0.6),
+    white,
+    rgba(146, 129, 247, 0.6),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.code-shimmer-bl {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(146, 129, 247, 0.4),
+    rgba(255, 255, 255, 0.5),
+    rgba(146, 129, 247, 0.4),
+    transparent
+  );
+  pointer-events: none;
 }

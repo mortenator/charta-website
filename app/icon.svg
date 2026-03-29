@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#CBC2FF"/>
+      <stop offset="100%" stop-color="#9281F7"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="100%" r="60%">
+      <stop offset="0%" stop-color="#9281F7" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#9281F7" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="topEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#0a0a0c"/>
+  <rect width="32" height="1" rx="0.5" fill="url(#topEdge)" opacity="0.5"/>
+  <rect x="32" y="32" width="32" height="0" fill="url(#glow)" transform="translate(-32,0)"/>
+  <ellipse cx="16" cy="28" rx="12" ry="4" fill="url(#glow)"/>
+  <rect x="6" y="14" width="4" height="12" rx="1" fill="url(#barGrad)"/>
+  <rect x="14" y="8" width="4" height="18" rx="1" fill="url(#barGrad)"/>
+  <rect x="22" y="11" width="4" height="15" rx="1" fill="url(#barGrad)"/>
+</svg>
