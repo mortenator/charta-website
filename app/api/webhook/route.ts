@@ -41,9 +41,14 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        const email = session.customer_email ?? session.customer_details?.email;
+        if (!email) {
+          console.warn("checkout.session.completed: no customer email found", session.id);
+          break;
+        }
         // TODO: provision the user's Plus subscription in your database
-        // e.g. update user record where email = session.customer_email
-        console.log("Checkout completed:", session.id, session.customer_email);
+        // e.g. await db.users.update({ where: { email }, data: { plan: "plus" } })
+        console.log("Checkout completed:", session.id, email);
         break;
       }
       case "customer.subscription.updated": {

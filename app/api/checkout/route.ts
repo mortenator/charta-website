@@ -10,6 +10,10 @@ const stripe = stripeSecretKey
 // Only Plus is available for self-serve checkout; Business uses contact flow (mailto:)
 const STRIPE_PRICE_PLUS = process.env.STRIPE_PRICE_PLUS;
 
+// NOTE: This endpoint is intentionally unauthenticated to support anonymous checkout.
+// Stripe limits abuse via its own fraud detection and session expiry (24h).
+// TODO: Once Supabase auth is integrated, optionally require a valid session cookie
+// to restrict checkout to signed-in users only.
 export async function POST(request: Request) {
   if (!stripe) {
     return Response.json(
