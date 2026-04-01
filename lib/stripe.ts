@@ -1,3 +1,4 @@
+import "server-only";
 import Stripe from "stripe";
 
 // Shared Stripe client — initialized once at module level.
