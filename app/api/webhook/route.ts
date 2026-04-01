@@ -47,26 +47,29 @@ export async function POST(request: Request) {
           console.warn("checkout.session.completed: no customer email found for session", session.id);
           break;
         }
-        // TODO: provision Plus plan for this user in your database
+        // TODO: provision the user's Plus subscription in your database
         // Example (Supabase):
         //   await supabase.from("users").update({ plan: "plus" }).eq("email", email)
         console.log("Checkout completed:", session.id);
-        break;
+        // Return 501 until provisioning is implemented to signal to Stripe
+        // that the event was not successfully handled, allowing for replay.
+        return new Response("Webhook handler not implemented", { status: 501 });
       }
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         // TODO: update subscription status in database based on subscription.status
         console.log("Subscription updated:", subscription.id, subscription.status);
-        break;
+        return new Response("Webhook handler not implemented", { status: 501 });
       }
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         // TODO: revoke Plus access for this subscription's customer in your database
         console.log("Subscription cancelled:", subscription.id);
-        break;
+        return new Response("Webhook handler not implemented", { status: 501 });
       }
       default:
         // Unhandled event type — safe to ignore
+        console.log(`Unhandled event type: ${event.type}`);
         break;
     }
   } catch (err) {
