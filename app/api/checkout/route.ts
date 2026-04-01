@@ -1,34 +1,11 @@
 import Stripe from "stripe";
 
-// Stripe client is initialized at module level for efficiency in long-lived environments.
-// Next.js serverless functions are ephemeral so this also works per-cold-start.
+// Stripe client initialized at module level for reuse across warm invocations.
+// NOTE: On serverless (Vercel), each cold start gets a fresh instance — this is expected.
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecretKey
   ? new Stripe(stripeSecretKey, { apiVersion: "2025-03-31.basil" })
   : null;
-
-// Simple in-memory rate limiter: max 10 requests per IP per minute.
-// Note: x-forwarded-for can be spoofed without trusted proxy configuration.
-// For production hardening, use Vercel edge middleware or a durable store (Redis/Upstash).
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 10;
-const RATE_WINDOW_MS = 60_000;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  // Evict expired entries to prevent unbounded map growth in long-lived environments
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key);
-  }
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return false;
-  }
-  if (entry.count >= RATE_LIMIT) return true;
-  entry.count++;
-  return false;
-}
 
 // Only Plus is available for self-serve checkout; Business uses contact flow (mailto:)
 const STRIPE_PRICE_PLUS = process.env.STRIPE_PRICE_PLUS;
@@ -38,16 +15,6 @@ export async function POST(request: Request) {
     return Response.json(
       { error: "Stripe is not configured" },
       { status: 500 },
-    );
-  }
-
-  // Rate limiting
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
-  if (isRateLimited(ip)) {
-    return Response.json(
-      { error: "Too many requests. Please try again later." },
-      { status: 429 },
     );
   }
 
