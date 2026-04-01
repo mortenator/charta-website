@@ -137,13 +137,18 @@ export default function Pricing() {
               )}
 
               {tier.name === "Plus" && (
-                <button
-                  onClick={() => handleCheckout("plus")}
-                  disabled={loadingTier === "plus"}
-                  className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {loadingTier === "plus" ? "Loading..." : tier.cta}
-                </button>
+                <>
+                  <button
+                    onClick={() => handleCheckout("plus")}
+                    disabled={loadingTier === "plus"}
+                    className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {loadingTier === "plus" ? "Loading..." : tier.cta}
+                  </button>
+                  {checkoutError && (
+                    <p className="text-red-400 text-xs mt-2 text-center">{checkoutError}</p>
+                  )}
+                </>
               )}
 
               {tier.name === "Business" && (
@@ -157,9 +162,6 @@ export default function Pricing() {
             </div>
           ))}
         </div>
-        {checkoutError && (
-          <p className="text-red-400 text-sm mt-4 text-center">{checkoutError}</p>
-        )}
       </div>
     </section>
   );

@@ -1,11 +1,39 @@
 import Stripe from "stripe";
 
+// Simple in-memory rate limiter: max 10 requests per IP per minute
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 60_000;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  if (entry.count >= RATE_LIMIT) return true;
+  entry.count++;
+  return false;
+}
+
+// Only Plus is available for self-serve checkout; Business uses contact flow
 const PRICE_IDS: Record<string, string | undefined> = {
   plus: process.env.STRIPE_PRICE_PLUS,
-  business: process.env.STRIPE_PRICE_BUSINESS,
+  // business: reserved for future self-serve (currently routes to mailto:)
 };
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
+  if (isRateLimited(ip)) {
+    return Response.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429 },
+    );
+  }
+
   const secretKey = process.env.STRIPE_SECRET_KEY;
   if (!secretKey) {
     return Response.json(
@@ -22,9 +50,9 @@ export async function POST(request: Request) {
   }
   const tier = body?.tier;
 
-  if (tier !== "plus" && tier !== "business") {
+  if (tier !== "plus") {
     return Response.json(
-      { error: "Invalid tier. Must be 'plus' or 'business'." },
+      { error: "Invalid tier. Only 'plus' is available for checkout." },
       { status: 400 },
     );
   }
@@ -37,10 +65,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const stripe = new Stripe(secretKey);
+  const stripe = new Stripe(secretKey, {
+    apiVersion: "2025-03-31.basil",
+  });
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://getcharta.ai";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://getcharta.ai";
 
   try {
     const session = await stripe.checkout.sessions.create({
