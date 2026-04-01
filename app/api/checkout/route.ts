@@ -44,7 +44,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://getcharta.ai";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!baseUrl) {
+    console.error("NEXT_PUBLIC_APP_URL is not set");
+    return Response.json(
+      { error: "Server configuration error" },
+      { status: 500 },
+    );
+  }
 
   try {
     const session = await stripe.checkout.sessions.create({

@@ -48,7 +48,8 @@ export async function POST(request: Request) {
         }
         // TODO: provision the user's Plus subscription in your database
         // e.g. await db.users.update({ where: { email }, data: { plan: "plus" } })
-        console.log("Checkout completed:", session.id, email);
+        // Log session id only — avoid logging PII (email) in production
+        console.log("Checkout completed:", session.id);
         break;
       }
       case "customer.subscription.updated": {
