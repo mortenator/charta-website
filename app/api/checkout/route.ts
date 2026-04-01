@@ -14,7 +14,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = await request.json();
+  let body: { tier?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  }
   const tier = body?.tier;
 
   if (tier !== "plus" && tier !== "business") {
@@ -54,8 +59,10 @@ export async function POST(request: Request) {
 
     return Response.json({ url: session.url });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Unexpected error creating checkout session";
-    return Response.json({ error: message }, { status: 500 });
+    console.error("Stripe checkout error:", err);
+    return Response.json(
+      { error: "Failed to initiate checkout. Please try again." },
+      { status: 500 },
+    );
   }
 }
