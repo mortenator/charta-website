@@ -39,25 +39,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    // In production, webhook stubs MUST be implemented or Stripe events will be
-    // lost after the initial retry period.
-    if (
-      process.env.NODE_ENV === "production" &&
-      (event.type === "checkout.session.completed" ||
-        event.type === "customer.subscription.updated" ||
-        event.type === "customer.subscription.deleted")
-    ) {
-      console.error(
-        `CRITICAL: Unhandled Stripe webhook event in production: ${event.type}`,
-      );
-      // Acknowledge receipt to Stripe to prevent retries for events we know aren't implemented.
-      // A real implementation would only return 200 after successfully updating the database.
-      return new Response(
-        `Production handler for ${event.type} not implemented.`,
-        { status: 200 },
-      );
-    }
-
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
