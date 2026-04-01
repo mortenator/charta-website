@@ -49,9 +49,11 @@ const tiers = [
 
 export default function Pricing() {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   async function handleCheckout(tier: "plus" | "business") {
     setLoadingTier(tier);
+    setCheckoutError(null);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -59,9 +61,13 @@ export default function Pricing() {
         body: JSON.stringify({ tier }),
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      if (!res.ok || !data.url) {
+        setCheckoutError(data.error ?? "Something went wrong. Please try again.");
+        return;
       }
+      window.location.href = data.url;
+    } catch {
+      setCheckoutError("Network error. Please try again.");
     } finally {
       setLoadingTier(null);
     }
@@ -151,6 +157,9 @@ export default function Pricing() {
             </div>
           ))}
         </div>
+        {checkoutError && (
+          <p className="text-red-400 text-sm mt-4 text-center">{checkoutError}</p>
+        )}
       </div>
     </section>
   );

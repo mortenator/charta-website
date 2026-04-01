@@ -37,12 +37,25 @@ export async function POST(request: Request) {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || "https://getcharta.ai";
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/#pricing`,
-  });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/#pricing`,
+    });
 
-  return Response.json({ url: session.url });
+    if (!session.url) {
+      return Response.json(
+        { error: "Failed to create checkout session" },
+        { status: 500 },
+      );
+    }
+
+    return Response.json({ url: session.url });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Unexpected error creating checkout session";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
