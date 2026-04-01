@@ -1,12 +1,18 @@
 import Stripe from "stripe";
 
-// Simple in-memory rate limiter: max 10 requests per IP per minute
+// Simple in-memory rate limiter: max 10 requests per IP per minute.
+// Note: relies on x-forwarded-for which can be spoofed without server-level trust;
+// for production, replace with a durable store (Redis/Upstash) or Vercel edge middleware.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60_000;
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
+  // Evict expired entries to prevent unbounded map growth
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
@@ -42,7 +48,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { tier?: unknown };
+  let body: { tier?: string };
   try {
     body = await request.json();
   } catch {
