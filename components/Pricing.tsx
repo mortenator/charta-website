@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 const tiers = [
   {
     name: "Free",
@@ -44,6 +48,25 @@ const tiers = [
 ] as const;
 
 export default function Pricing() {
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+
+  async function handleCheckout(tier: "plus" | "business") {
+    setLoadingTier(tier);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } finally {
+      setLoadingTier(null);
+    }
+  }
+
   return (
     <section id="pricing" className="py-32 px-6 relative">
       {/* Section shimmer line */}
@@ -98,11 +121,33 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
-                className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02]`}
-              >
-                {tier.cta}
-              </button>
+              {tier.name === "Free" && (
+                <a
+                  href="https://workspace.google.com/marketplace/app/charta"
+                  className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] text-center block`}
+                >
+                  {tier.cta}
+                </a>
+              )}
+
+              {tier.name === "Plus" && (
+                <button
+                  onClick={() => handleCheckout("plus")}
+                  disabled={loadingTier === "plus"}
+                  className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {loadingTier === "plus" ? "Loading..." : tier.cta}
+                </button>
+              )}
+
+              {tier.name === "Business" && (
+                <a
+                  href="mailto:hello@getcharta.ai"
+                  className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] text-center block`}
+                >
+                  {tier.cta}
+                </a>
+              )}
             </div>
           ))}
         </div>
