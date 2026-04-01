@@ -1,17 +1,10 @@
-import Stripe from "stripe";
-
-// Stripe client initialized at module level for reuse across warm invocations.
-// NOTE: On serverless (Vercel), each cold start gets a fresh instance — this is expected.
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, { apiVersion: "2025-03-31.basil" })
-  : null;
+import { stripe } from "@/lib/stripe";
 
 // Only Plus is available for self-serve checkout; Business uses contact flow (mailto:)
 const STRIPE_PRICE_PLUS = process.env.STRIPE_PRICE_PLUS;
 
 // NOTE: This endpoint is intentionally unauthenticated to support anonymous checkout.
-// Stripe limits abuse via its own fraud detection and session expiry (24h).
+// Stripe limits abuse via its own fraud detection and 24h session expiry.
 // TODO: Once Supabase auth is integrated, optionally require a valid session cookie
 // to restrict checkout to signed-in users only.
 export async function POST(request: Request) {
@@ -44,9 +37,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const baseUrl = process.env.APP_URL;
   if (!baseUrl) {
-    console.error("NEXT_PUBLIC_APP_URL is not set");
+    console.error("APP_URL is not set");
     return Response.json(
       { error: "Server configuration error" },
       { status: 500 },

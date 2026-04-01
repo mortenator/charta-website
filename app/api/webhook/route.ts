@@ -1,24 +1,25 @@
 import Stripe from "stripe";
+import { stripe } from "@/lib/stripe";
 
-// Stripe webhook handler — verifies subscription lifecycle events.
+// Stripe webhook handler — verifies and processes subscription lifecycle events.
 // Required env vars: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 //
-// Set up in Stripe Dashboard: Webhooks → Add endpoint → https://getcharta.ai/api/webhook
-// Events to listen for:
+// Set up in Stripe Dashboard: Developers → Webhooks → Add endpoint
+// URL: https://getcharta.ai/api/webhook
+// Events to subscribe:
 //   - checkout.session.completed
 //   - customer.subscription.updated
 //   - customer.subscription.deleted
+//
+// ⚠️ IMPORTANT: The checkout.session.completed handler below must be wired to your
+// database (provision user's Plus plan) before this can go to production.
+// Follow-up task: https://github.com/mortenator/charta-website/issues (Stripe provisioning)
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, { apiVersion: "2025-03-31.basil" })
-  : null;
 
 export async function POST(request: Request) {
   if (!stripe || !webhookSecret) {
-    console.error("Stripe webhook not configured");
+    console.error("Stripe webhook not configured (missing STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET)");
     return new Response("Webhook not configured", { status: 500 });
   }
 
@@ -43,23 +44,24 @@ export async function POST(request: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         const email = session.customer_email ?? session.customer_details?.email;
         if (!email) {
-          console.warn("checkout.session.completed: no customer email found", session.id);
+          console.warn("checkout.session.completed: no customer email found for session", session.id);
           break;
         }
-        // TODO: provision the user's Plus subscription in your database
-        // e.g. await db.users.update({ where: { email }, data: { plan: "plus" } })
-        // Log session id only — avoid logging PII (email) in production
+        // TODO: provision Plus plan for this user in your database
+        // Example (Supabase):
+        //   await supabase.from("users").update({ plan: "plus" }).eq("email", email)
         console.log("Checkout completed:", session.id);
         break;
       }
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
+        // TODO: update subscription status in database based on subscription.status
         console.log("Subscription updated:", subscription.id, subscription.status);
         break;
       }
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        // TODO: revoke the user's Plus access in your database
+        // TODO: revoke Plus access for this subscription's customer in your database
         console.log("Subscription cancelled:", subscription.id);
         break;
       }
