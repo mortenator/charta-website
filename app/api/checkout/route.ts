@@ -1,15 +1,22 @@
 import Stripe from "stripe";
 
+// Stripe client is initialized at module level for efficiency in long-lived environments.
+// Next.js serverless functions are ephemeral so this also works per-cold-start.
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, { apiVersion: "2025-03-31.basil" })
+  : null;
+
 // Simple in-memory rate limiter: max 10 requests per IP per minute.
-// Note: relies on x-forwarded-for which can be spoofed without server-level trust;
-// for production, replace with a durable store (Redis/Upstash) or Vercel edge middleware.
+// Note: x-forwarded-for can be spoofed without trusted proxy configuration.
+// For production hardening, use Vercel edge middleware or a durable store (Redis/Upstash).
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60_000;
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
-  // Evict expired entries to prevent unbounded map growth
+  // Evict expired entries to prevent unbounded map growth in long-lived environments
   for (const [key, entry] of rateLimitMap) {
     if (now > entry.resetAt) rateLimitMap.delete(key);
   }
@@ -23,13 +30,17 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-// Only Plus is available for self-serve checkout; Business uses contact flow
-const PRICE_IDS: Record<string, string | undefined> = {
-  plus: process.env.STRIPE_PRICE_PLUS,
-  // business: reserved for future self-serve (currently routes to mailto:)
-};
+// Only Plus is available for self-serve checkout; Business uses contact flow (mailto:)
+const STRIPE_PRICE_PLUS = process.env.STRIPE_PRICE_PLUS;
 
 export async function POST(request: Request) {
+  if (!stripe) {
+    return Response.json(
+      { error: "Stripe is not configured" },
+      { status: 500 },
+    );
+  }
+
   // Rate limiting
   const forwarded = request.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",")[0].trim() : "unknown";
@@ -37,14 +48,6 @@ export async function POST(request: Request) {
     return Response.json(
       { error: "Too many requests. Please try again later." },
       { status: 429 },
-    );
-  }
-
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    return Response.json(
-      { error: "Stripe is not configured" },
-      { status: 500 },
     );
   }
 
@@ -63,24 +66,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const priceId = PRICE_IDS[tier];
-  if (!priceId) {
+  if (!STRIPE_PRICE_PLUS) {
     return Response.json(
-      { error: `Price ID not configured for tier: ${tier}` },
+      { error: "Price ID not configured for Plus tier" },
       { status: 500 },
     );
   }
-
-  const stripe = new Stripe(secretKey, {
-    apiVersion: "2025-03-31.basil",
-  });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://getcharta.ai";
 
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: STRIPE_PRICE_PLUS, quantity: 1 }],
       success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/#pricing`,
     });

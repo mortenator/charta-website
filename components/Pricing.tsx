@@ -51,7 +51,7 @@ export default function Pricing() {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
-  async function handleCheckout(tier: "plus" | "business") {
+  async function handleCheckout(tier: "plus") {
     setLoadingTier(tier);
     setCheckoutError(null);
     try {
