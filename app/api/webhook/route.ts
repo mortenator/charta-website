@@ -39,15 +39,37 @@ export async function POST(request: Request) {
   }
 
   try {
+    // In production, webhook stubs MUST be implemented or Stripe events will be
+    // lost after the initial retry period.
+    if (
+      process.env.NODE_ENV === "production" &&
+      (event.type === "checkout.session.completed" ||
+        event.type === "customer.subscription.updated" ||
+        event.type === "customer.subscription.deleted")
+    ) {
+      console.error(
+        `CRITICAL: Unhandled Stripe webhook event in production: ${event.type}`,
+      );
+      // Acknowledge receipt to Stripe to prevent retries for events we know aren't implemented.
+      // A real implementation would only return 200 after successfully updating the database.
+      return new Response(
+        `Production handler for ${event.type} not implemented.`,
+        { status: 200 },
+      );
+    }
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const email = session.customer_email ?? session.customer_details?.email;
         if (!email) {
-          console.warn("checkout.session.completed: no customer email found for session", session.id);
+          console.warn(
+            "checkout.session.completed: no customer email found for session",
+            session.id,
+          );
           break;
         }
-        // TODO: provision the user's Plus subscription in your database
+        // TODO: provision Plus plan for this user in your database
         // Example (Supabase):
         //   await supabase.from("users").update({ plan: "plus" }).eq("email", email)
         console.log("Checkout completed:", session.id);
@@ -58,7 +80,11 @@ export async function POST(request: Request) {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         // TODO: update subscription status in database based on subscription.status
-        console.log("Subscription updated:", subscription.id, subscription.status);
+        console.log(
+          "Subscription updated:",
+          subscription.id,
+          subscription.status,
+        );
         return new Response("Webhook handler not implemented", { status: 501 });
       }
       case "customer.subscription.deleted": {
