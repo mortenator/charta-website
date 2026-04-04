@@ -1,3 +1,5 @@
+import { MARKETPLACE_URL } from "@/lib/constants";
+
 export default function SuccessPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen py-20 px-6">
@@ -9,7 +11,7 @@ export default function SuccessPage() {
           plan is active.
         </p>
         <a
-          href="https://workspace.google.com/marketplace/app/charta"
+          href={MARKETPLACE_URL}
           className="glass-button-purple py-3 px-6 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02]"
         >
           Go to Charta Add-on

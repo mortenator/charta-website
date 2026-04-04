@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MARKETPLACE_URL } from "@/lib/constants";
 
 const tiers = [
   {
@@ -49,11 +50,11 @@ const tiers = [
 
 export default function Pricing() {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<Record<string, string | null>>({});
 
   async function handleCheckout(tier: "plus") {
     setLoadingTier(tier);
-    setCheckoutError(null);
+    setCheckoutError((prev) => ({ ...prev, [tier]: null }));
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -62,12 +63,18 @@ export default function Pricing() {
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        setCheckoutError(data.error ?? "Something went wrong. Please try again.");
+        setCheckoutError((prev) => ({
+          ...prev,
+          [tier]: data.error ?? "Something went wrong. Please try again.",
+        }));
         return;
       }
       window.location.href = data.url;
     } catch {
-      setCheckoutError("Network error. Please try again.");
+      setCheckoutError((prev) => ({
+        ...prev,
+        [tier]: "Network error. Please try again.",
+      }));
     } finally {
       setLoadingTier(null);
     }
@@ -129,7 +136,7 @@ export default function Pricing() {
 
               {tier.name === "Free" && (
                 <a
-                  href="https://workspace.google.com/marketplace/app/charta"
+                  href={MARKETPLACE_URL}
                   className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] text-center block`}
                 >
                   {tier.cta}
@@ -145,8 +152,8 @@ export default function Pricing() {
                   >
                     {loadingTier === "plus" ? "Loading..." : tier.cta}
                   </button>
-                  {checkoutError && (
-                    <p className="text-red-400 text-xs mt-2 text-center">{checkoutError}</p>
+                  {checkoutError["plus"] && (
+                    <p className="text-red-400 text-xs mt-2 text-center">{checkoutError["plus"]}</p>
                   )}
                 </>
               )}
