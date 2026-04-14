@@ -1,3 +1,8 @@
+"use client";
+
+import { useState } from "react";
+import { MARKETPLACE_URL } from "@/lib/constants";
+
 const tiers = [
   {
     name: "Free",
@@ -44,6 +49,37 @@ const tiers = [
 ] as const;
 
 export default function Pricing() {
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<Record<string, string | null>>({});
+
+  async function handleCheckout(tier: "plus") {
+    setLoadingTier(tier);
+    setCheckoutError((prev) => ({ ...prev, [tier]: null }));
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setCheckoutError((prev) => ({
+          ...prev,
+          [tier]: data.error ?? "Something went wrong. Please try again.",
+        }));
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setCheckoutError((prev) => ({
+        ...prev,
+        [tier]: "Network error. Please try again.",
+      }));
+    } finally {
+      setLoadingTier(null);
+    }
+  }
+
   return (
     <section id="pricing" className="py-32 px-6 relative">
       {/* Section shimmer line */}
@@ -98,11 +134,38 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
-                className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02]`}
-              >
-                {tier.cta}
-              </button>
+              {tier.name === "Free" && (
+                <a
+                  href={MARKETPLACE_URL}
+                  className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] text-center block`}
+                >
+                  {tier.cta}
+                </a>
+              )}
+
+              {tier.name === "Plus" && (
+                <>
+                  <button
+                    onClick={() => handleCheckout("plus")}
+                    disabled={loadingTier === "plus"}
+                    className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {loadingTier === "plus" ? "Loading..." : tier.cta}
+                  </button>
+                  {checkoutError["plus"] && (
+                    <p className="text-red-400 text-xs mt-2 text-center">{checkoutError["plus"]}</p>
+                  )}
+                </>
+              )}
+
+              {tier.name === "Business" && (
+                <a
+                  href="mailto:hello@getcharta.ai"
+                  className={`${tier.highlighted ? "glass-button-purple" : "glass-button"} w-full py-3 rounded-2xl text-sm font-medium transition-all hover:scale-[1.02] text-center block`}
+                >
+                  {tier.cta}
+                </a>
+              )}
             </div>
           ))}
         </div>
